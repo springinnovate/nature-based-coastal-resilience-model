@@ -456,6 +456,7 @@ def explode_to_linework(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 def main() -> None:
     args = parse_args()
     output_path = Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     if output_path.exists():
         if not args.overwrite:
             raise SystemExit(f"{output_path} already exists. Use --overwrite to replace it.")
