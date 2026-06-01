@@ -147,6 +147,15 @@ python scripts/classify_coastline.py \
   --overwrite
 ```
 
+GCC can be supplied as a point vector file or as a CSV with coordinate columns:
+
+```bash
+--gcc data/raw/gcc/GCC_geophysical.csv
+--gcc-x-field lon
+--gcc-y-field lat
+--gcc-crs EPSG:4326
+```
+
 Optional layer arguments are available for multi-layer files:
 
 ```bash

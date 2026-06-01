@@ -117,6 +117,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--coastline-layer", help="Optional coastline layer name.")
     parser.add_argument("--gcc", required=True, help="GCC point/transect vector path.")
     parser.add_argument("--gcc-layer", help="Optional GCC layer name.")
+    parser.add_argument("--gcc-x-field", help="Longitude/X field for CSV GCC input. Defaults to lon/longitude/x.")
+    parser.add_argument("--gcc-y-field", help="Latitude/Y field for CSV GCC input. Defaults to lat/latitude/y.")
+    parser.add_argument("--gcc-crs", default="EPSG:4326", help="CRS for CSV GCC coordinates.")
     parser.add_argument("--output", required=True, help="Output vector path, preferably .gpkg.")
     parser.add_argument("--output-layer", default="shoreline_segments")
     parser.add_argument("--overwrite", action="store_true", help="Overwrite output path if it exists.")
@@ -196,6 +199,39 @@ def read_vector(path: str, layer: str | None) -> gpd.GeoDataFrame:
     gdf = gdf[gdf.geometry.notna()].copy()
     gdf["geometry"] = gdf.geometry.map(lambda geom: make_valid(geom) if not geom.is_valid else geom)
     return gdf
+
+
+def resolve_coordinate_field(columns: list[str], explicit: str | None, candidates: list[str], axis: str) -> str:
+    if explicit:
+        if explicit not in columns:
+            raise SystemExit(f"Requested GCC {axis} field '{explicit}' was not found.")
+        return explicit
+
+    lower_to_column = {column.lower(): column for column in columns}
+    for candidate in candidates:
+        if candidate.lower() in lower_to_column:
+            return lower_to_column[candidate.lower()]
+    raise SystemExit(
+        f"Could not detect GCC {axis} coordinate field. "
+        f"Pass --gcc-{axis}-field explicitly."
+    )
+
+
+def read_gcc(path: str, layer: str | None, args: argparse.Namespace) -> gpd.GeoDataFrame:
+    if Path(path).suffix.lower() != ".csv":
+        return read_vector(path, layer)
+
+    table = pd.read_csv(path)
+    if table.empty:
+        raise SystemExit(f"No rows found in {path}.")
+    columns = list(table.columns)
+    x_field = resolve_coordinate_field(columns, args.gcc_x_field, ["lon", "longitude", "x"], "x")
+    y_field = resolve_coordinate_field(columns, args.gcc_y_field, ["lat", "latitude", "y"], "y")
+    table = table.dropna(subset=[x_field, y_field]).copy()
+    if table.empty:
+        raise SystemExit(f"No GCC rows in {path} have both {x_field} and {y_field}.")
+    geometry = gpd.points_from_xy(table[x_field], table[y_field])
+    return gpd.GeoDataFrame(table, geometry=geometry, crs=args.gcc_crs)
 
 
 def require_geometry(gdf: gpd.GeoDataFrame, allowed: set[str], name: str) -> None:
@@ -423,7 +459,7 @@ def main() -> None:
 
     aoi = dissolve_aoi(read_vector(args.aoi, args.aoi_layer))
     coastline = read_vector(args.coastline, args.coastline_layer)
-    gcc = read_vector(args.gcc, args.gcc_layer)
+    gcc = read_gcc(args.gcc, args.gcc_layer, args)
     require_geometry(coastline, {"LineString", "MultiLineString"}, "Coastline")
     require_geometry(gcc, {"Point"}, "GCC")
 

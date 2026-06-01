@@ -11,5 +11,7 @@ Added
   linework to a polygon AOI, segments it by Voronoi cells generated from nearby
   GCC points, assigns each line segment to its nearest GCC point, and writes a
   classified shoreline vector output.
+- Added support for GCC CSV inputs with longitude and latitude coordinate
+  fields.
 - Documented classifier usage, required local inputs, output fields, and
   geospatial Python dependencies.
