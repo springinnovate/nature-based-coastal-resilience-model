@@ -120,6 +120,76 @@ Population and assets are not part of the first model concept, but can be added 
 
 The simplest useful global model is a shoreline-segment screening model with habitat attenuation factors.
 
+## Coastline Classification Utility
+
+The first utility creates classified shoreline linework for a polygon AOI using local source data:
+
+- polygon AOI vector
+- coastline line vector
+- GCC point/transect vector
+
+The script clips the coastline to the AOI, builds Voronoi cells from GCC points in a buffered AOI, intersects the clipped coastline with those cells, and assigns each resulting line segment to the nearest GCC point. The output is a line vector with a conservative first-pass classification of whether habitat-based coastal protection is physically relevant.
+
+Install geospatial dependencies:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+Run the utility:
+
+```bash
+python scripts/classify_coastline.py \
+  --aoi data/aoi/example_aoi.geojson \
+  --coastline data/raw/coastline/coastline.gpkg \
+  --gcc data/raw/gcc/gcc_points.gpkg \
+  --output outputs/classified_coastline.gpkg \
+  --overwrite
+```
+
+Optional layer arguments are available for multi-layer files:
+
+```bash
+--aoi-layer AOI_LAYER
+--coastline-layer COASTLINE_LAYER
+--gcc-layer GCC_LAYER
+--output-layer shoreline_segments
+```
+
+If the GCC field names are not detected correctly, pass explicit field mappings:
+
+```bash
+--gcc-id-field transect_id
+--coast-type-field coastal_type
+--slope-field slope
+--elevation-field elevation
+--wave-field wave_height
+--armoring-field hard_defense
+--vegetation-field vegetation
+--sandy-field sandy
+--rocky-field rocky
+```
+
+The output includes:
+
+- `segment_id`
+- source coastline line id
+- nearest `gcc_id`
+- `gcc_distance_m`
+- `length_m`
+- `classification`
+- `classification_reason`
+- detected or explicitly mapped GCC classifier fields
+
+Classification values:
+
+- `habitat protection likely relevant`
+- `habitat protection possibly relevant`
+- `habitat protection unlikely to matter`
+- `insufficient data`
+
+This is a screening classifier, not a hydrodynamic model. It classifies physical relevance of habitat-based protection, not confirmed habitat presence or avoided damages.
+
 ### Unit Of Analysis
 
 Use shoreline segments that look good on a 2D map.
