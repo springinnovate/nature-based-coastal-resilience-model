@@ -244,7 +244,11 @@ def require_geometry(gdf: gpd.GeoDataFrame, allowed: set[str], name: str) -> Non
 def dissolve_aoi(aoi: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     polygons = {"Polygon", "MultiPolygon"}
     require_geometry(aoi, polygons, "AOI")
-    return gpd.GeoDataFrame(geometry=[aoi.geometry.unary_union], crs=aoi.crs)
+    if hasattr(aoi.geometry, "union_all"):
+        dissolved = aoi.geometry.union_all()
+    else:
+        dissolved = aoi.geometry.unary_union
+    return gpd.GeoDataFrame(geometry=[dissolved], crs=aoi.crs)
 
 
 def choose_metric_crs(aoi: gpd.GeoDataFrame, explicit: str | None) -> CRS:
