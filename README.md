@@ -1,4 +1,4 @@
-# Coastal Natural Protection Model
+# Nature Based Coastal Resilience Model
 
 This repository is a workspace for a global, coarse-screening model of where coastal habitats may reduce shoreline risk and where their loss or restoration could change exposure to coastal hazards.
 
